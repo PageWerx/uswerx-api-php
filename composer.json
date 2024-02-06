@@ -1,0 +1,16 @@
+{
+    "name": "pagewerx/uswerx-api-php",
+    "description": "API Library Package for integrating with USWerx",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pagewerx\\UswerxApiPhp\\": "src/"
+        }
+    }
+}
