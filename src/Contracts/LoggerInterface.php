@@ -1,6 +1,6 @@
 <?php
 
-namespace src\Contracts;
+namespace Pagewerx\UswerxApiPhp\Contracts;
 interface LoggerInterface
 {
     const DEBUG = 100;
