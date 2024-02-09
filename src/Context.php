@@ -37,6 +37,8 @@ class Context extends Singleton
         if ($httpClient !== null)
         {
             $this->setHttpClient($httpClient);
+        } else {
+            $this->setHttpClient(new Client());
         }
         return $this;
     }

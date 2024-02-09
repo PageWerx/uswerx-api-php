@@ -7,7 +7,7 @@ use Pagewerx\UswerxApiPhp\Client\Client;
 use Pagewerx\UswerxApiPhp\Context;
 use Pagewerx\UswerxApiPhp\Contracts\LoggerInterface;
 
-class draft
+class DraftOrder
 {
     private $uswerxId;
     public $DraftOrder;
@@ -24,11 +24,12 @@ class draft
      * @param array $data The data to be used to create the DraftOrder object.
      * @throws Exception
      */
-    public function __construct($data = []) {
+    public function __construct() {}
 
-    }
-
-    public static function new($data = []): draft
+    /**
+     * @throws Exception
+     */
+    public static function create($data = []): DraftOrder
     {
         $draft = new self();
         $draft->client = new Client(); // Throws an exception if Context is not initialized.
@@ -54,7 +55,20 @@ class draft
             'headers' => $headers,
             'form_params' => $form_data ?? [],
         ]);
-        $draft->DraftOrder = json_decode($response->getBody()->getContents(), false);
+        $dataLog = "Response is a: ";
+        if($response instanceof \GuzzleHttp\Psr7\Response) {
+            $dataLog.= "Guzzle Response object";
+        } else {
+            $dataLog.= gettype($response);
+        }
+        $draft->logger->debug($dataLog);
+
+        $responseObj = json_decode($response,false);
+        $draft->logger->debug('DraftOrder created', [
+            'api_response_string'   =>      $response,
+            'api_response_object'   =>      $responseObj
+        ]);
+        $draft->DraftOrder = $responseObj;
         $draft->shopData = $draft->getDraftOrderData()->shop_data;
         $draft->shopId = $draft->shopData->id;
         $draft->name = $draft->shopData->name;
@@ -90,9 +104,9 @@ class draft
     /**
      * Retrieves the raw draft order data.
      *
-     * @return object The draft order data as an object.
+     * @return object|null The draft order data as an object.
      */
-    public function getDraftOrderData(): object
+    public function getDraftOrderData(): ?object
     {
         return $this->DraftOrder;
     }

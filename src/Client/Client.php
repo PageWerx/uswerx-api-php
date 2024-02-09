@@ -5,7 +5,8 @@ namespace Pagewerx\UswerxApiPhp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Pagewerx\UswerxApiPhp\Context;
 use Pagewerx\UswerxApiPhp\Contracts\LoggerInterface;
-use Pagewerx\UswerxApiPhp\DraftOrder\draft;
+use Pagewerx\UswerxApiPhp\DraftOrder\DraftOrder;
+use Psr\Http\Message\ResponseInterface;
 
 class Client
 {
@@ -28,10 +29,9 @@ class Client
         $this->host = $context->getHost();
         $this->debug = $context->debugMode();
         $this->test = $context->testMode();
-        if ($this->test) {
-            $this->host = 'https://example.com';
-            $this->httpClient = $context->getClient();
-        }
+        $this->host = $context->getHost();
+        $this->httpClient = $context->getClient();
+        $this->logger = $context->getLogger();
     }
 
     public function enableDebug(): Client
@@ -51,7 +51,8 @@ class Client
         return $this->debug;
     }
 
-    public function createDraftOrder($data = []): draft
+    /*
+    public function createDraftOrder($data = []): DraftOrder
     {
         try {
             $this->debugLog('Creating Draft Order', $data);
@@ -78,7 +79,7 @@ class Client
                 'form_params' => $form_data
             ]);
             $draftObj = json_decode($response->getBody()->getContents(), false);
-            $draft = new draft($draftObj->id,$draftObj);
+            $draft = new DraftOrder($draftObj->id,$draftObj);
             return $draft;
         } catch (\Exception $e) {
             $this->debugLog('Exception: '.$e->getMessage());
@@ -88,10 +89,16 @@ class Client
             throw new \Exception('An error occurred while processing API request: '.$e->getMessage(), $e->getCode());
         }
     }
+    */
 
+    /**
+     * Retrieves the logger instance.
+     *
+     * @return LoggerInterface|null The logger instance or null if it is not set.
+     */
     private function getLogger(): ?LoggerInterface
     {
-        return $this->logger;
+        return $this->logger ?? null;
     }
     private function loggingEnabled(): bool
     {
@@ -120,10 +127,26 @@ class Client
         return $this->token;
     }
 
-    public function post(string $endpoint, array $array)
+    public function post(string $endpoint, array $data)
     {
-        $this->debugLog('Posting to '.$endpoint, $array);
-        $response = $this->httpClient->post($endpoint, $array);
-        return $response;
+        try {
+            $this->debugLog('Posting to '.$endpoint, $data);
+            $response = $this->httpClient->post($endpoint, $data);
+            $status = $response->getStatusCode();
+            $body = $response->getBody()->getContents();
+            $this->debugLog('Response Received: ', [
+                'HTTP_RESPONSE_CODE'=>$status,
+                'RESPONSE_BODY'=>$body,
+            ]);
+            return $body;
+        } catch (\Exception $e) {
+            $this->debugLog('Exception: '.$e->getMessage());
+            echo 'Exception: '.$e->getMessage()."\n";
+            throw new \Exception('An error occurred while processing API request: '.$e->getMessage(), $e->getCode());
+        } catch (GuzzleException $e) {
+            $this->debugLog('GuzzleException: '.$e->getMessage());
+            echo 'GuzzleException: '.$e->getMessage()."\n";
+            throw new \Exception('An error occurred while processing API request: '.$e->getMessage(), $e->getCode());
+        }
     }
 }

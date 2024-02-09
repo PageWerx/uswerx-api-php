@@ -56,7 +56,6 @@ class ContextTest extends TestCase
     public function testContextReturnsToken(): void
     {
         $context = Context::getInstance();
-        print_r($context);
         $this->assertSame('test_token', $context->getToken());
     }
 
