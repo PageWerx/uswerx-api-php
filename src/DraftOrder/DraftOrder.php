@@ -2,14 +2,67 @@
 
 namespace Pagewerx\UswerxApiPhp\DraftOrder;
 
-class DraftOrder
+use Exception;
+use Pagewerx\UswerxApiPhp\Client\Client;
+use Pagewerx\UswerxApiPhp\Context;
+use Pagewerx\UswerxApiPhp\Contracts\LoggerInterface;
+
+class draft
 {
     private $uswerxId;
     public $DraftOrder;
     public $shopData;
     private $shopId;
     private $name;
+    private Context $context;
+    private LoggerInterface $logger;
+    private Client $client;
 
+    /**
+     * DraftOrder constructor.
+     *
+     * @param array $data The data to be used to create the DraftOrder object.
+     * @throws Exception
+     */
+    public function __construct($data = []) {
+
+    }
+
+    public static function new($data = []): draft
+    {
+        $draft = new self();
+        $draft->client = new Client(); // Throws an exception if Context is not initialized.
+        $draft->context = Context::getInstance();
+        $draft->logger = $draft->context->getLogger();
+        $draft->logger->debug('Creating DraftOrder object');
+        $endpoint = $draft->client->getHost() . '/api/draft-orders';
+        $headers = [
+            'Authorization' => 'Bearer ' . $draft->client->getToken(),
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ];
+        // set form data field line_items to the comma delimited list of SKUs
+        if (!empty($data['line_items'])) {
+            if (is_array($data['line_items'])) {
+                $form_data['line_items'] = implode(',', $data['line_items']);
+            } else {
+                $form_data['line_items'] = $data['line_items'];
+            }
+        }
+
+        //post $form_data to the endpoint
+        $response = $draft->client->post($endpoint, [
+            'headers' => $headers,
+            'form_params' => $form_data ?? [],
+        ]);
+        $draft->DraftOrder = json_decode($response->getBody()->getContents(), false);
+        $draft->shopData = $draft->getDraftOrderData()->shop_data;
+        $draft->shopId = $draft->shopData->id;
+        $draft->name = $draft->shopData->name;
+        $draft->uswerxId = $draft->DraftOrder->id;
+        return $draft;
+    }
+
+    /*
     public function __construct(int $id, object $data)
     {
         $this->uswerxId = $id;
@@ -18,7 +71,7 @@ class DraftOrder
         $this->shopId = $data->id;
         $this->name = $this->DraftOrder->shop_data->name;
     }
-
+    */
     public function getShopId()
     {
         return $this->shopId;

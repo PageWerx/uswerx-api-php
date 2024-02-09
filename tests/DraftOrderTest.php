@@ -4,7 +4,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
-use Pagewerx\UswerxApiPhp\DraftOrder\DraftOrder;
+use Pagewerx\UswerxApiPhp\DraftOrder\draft;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
@@ -18,12 +18,12 @@ class DraftOrderTest extends TestCase
         $handlerStack = HandlerStack::create($mock);
         $this->httpClient = new Client(['handler' => $handlerStack]);
     }
-    public function testCreateDraftOrder(): DraftOrder
+    public function testCreateDraftOrder(): draft
     {
         try {
             $apiClient = new \Pagewerx\UswerxApiPhp\Client\Client('123', 'https://example.com', null, false, true, $this->httpClient);
             $draft = $apiClient->createDraftOrder(['line_items' => ['EDP_1995','EDP_495']]);
-            $this->assertSame(DraftOrder::class, get_class($draft));
+            $this->assertSame(draft::class, get_class($draft));
             return $draft;
         } catch (\Exception $e) {
             $this->fail($e->getMessage());
@@ -31,38 +31,38 @@ class DraftOrderTest extends TestCase
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasInvoiceURL(DraftOrder $draft)
+    public function testDraftOrderHasInvoiceURL(draft $draft)
     {
         $this->assertSame('https://sandboxpay.uswerx.com/63259771037/invoices/04e84c243d803a38a718ef55e0ca69eb', $draft->getInvoiceUrl());
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasUswerxId(DraftOrder $draft)
+    public function testDraftOrderHasUswerxId(draft $draft)
     {
         $this->assertIsInt($draft->getUswerxId());
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasShopifyId(DraftOrder $draft)
+    public function testDraftOrderHasShopifyId(draft $draft)
     {
         $this->assertIsInt($draft->getShopId());
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasName(DraftOrder $draft)
+    public function testDraftOrderHasName(draft $draft)
     {
         $this->assertIsString($draft->getName());
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasLineItems(DraftOrder $draft)
+    public function testDraftOrderHasLineItems(draft $draft)
     {
         $draft = $this->testCreateDraftOrder();
         $this->assertIsArray($draft->getLineItems());
     }
 
     #[depends('testCreateDraftOrder')]
-    public function testDraftOrderHasRawData(DraftOrder $draft) {
+    public function testDraftOrderHasRawData(draft $draft) {
         $this->assertIsObject($draft->getDraftOrderData());
     }
 }

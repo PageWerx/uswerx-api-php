@@ -12,20 +12,9 @@ class Context extends Singleton
     protected string|null       $host = null;
     protected bool              $debug = false;
     protected bool              $test = false;
+    protected bool              $initialized = false;
     protected Client            $httpClient;
     protected LoggerInterface   $logger;
-
-//    protected function __construct(
-//        string          $token,
-//        string          $host = 'https://uswerx.com',
-//        LoggerInterface $logger = null,
-//        bool            $debug = false,
-//        bool            $test = false,
-//        Client          $httpClient = null
-//    )
-//    {
-//        // Don't allow instantiation via new.
-//    }
 
     public function settings(
         string          $token,
@@ -38,6 +27,7 @@ class Context extends Singleton
     {
         $this->setToken($token);
         $this->setHost($host);
+        $this->initialized = true;
         if ($logger !== null)
         {
             $this->setLogger($logger);
@@ -124,6 +114,16 @@ class Context extends Singleton
     private function setHttpClient(?Client $httpClient): void
     {
         $this->httpClient = $httpClient;
+    }
+
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    public function initialized(): bool
+    {
+        return $this->initialized;
     }
 }
 

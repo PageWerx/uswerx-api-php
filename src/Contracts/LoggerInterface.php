@@ -11,6 +11,16 @@ interface LoggerInterface
     const CRITICAL = 500;
     const ALERT = 550;
     const EMERGENCY = 600;
+    const LEVELS = [
+        self::DEBUG => 'DEBUG',
+        self::INFO => 'INFO',
+        self::NOTICE => 'NOTICE',
+        self::WARNING => 'WARNING',
+        self::ERROR => 'ERROR',
+        self::CRITICAL => 'CRITICAL',
+        self::ALERT => 'ALERT',
+        self::EMERGENCY => 'EMERGENCY',
+    ];
 
     /**
      * Logs a message with a specific level and additional context.

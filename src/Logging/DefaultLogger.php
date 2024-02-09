@@ -29,7 +29,7 @@ class DefaultLogger implements LoggerInterface
      * @param mixed $path
      * @return void
      */
-    private function setLogPath(mixed $path)
+    public function setLogPath(mixed $path)
     {
         $this->path = $path ?? __DIR__."/../../logs/";
     }
@@ -40,12 +40,12 @@ class DefaultLogger implements LoggerInterface
      * @param mixed $filename
      * @return void
      */
-    private function setFilename(mixed $filename)
+    public function setFilename(mixed $filename)
     {
         $this->filename = $filename ?? date('m-d-Y').".log";
     }
 
-    private function createLogDirectory()
+    private function createLogDirectory(): void
     {
         if (!file_exists($this->getLogPath())) {
             mkdir($this->getLogPath(), 0777, true);
@@ -63,55 +63,22 @@ class DefaultLogger implements LoggerInterface
     function log(string $message, int $level, array $context): void
     {
         try {
+            $levelName = self::LEVELS[$level] ?? 'CUSTOM';
             $logHandle = $this->getLogPath().$this->getFilename();
-            $logMessage = date('Y-m-d H:i:s')." [{$level}] {$message} ".json_encode($context).PHP_EOL;
+            $logMessage = "[".$levelName."] [".date('Y-m-d H:i:s')."]  {$message} ".json_encode($context).PHP_EOL;
             file_put_contents($logHandle, $logMessage, FILE_APPEND);
         } catch (Exception $e) {
             throw new Exception("Error writing to log file: ".$e->getMessage(), 500);
         }
     }
 
-    function logForLevel(string $message, int $level, array $context): void
-    {
-        switch ($level) {
-            case self::DEBUG:
-            case self::INFO:
-            case self::NOTICE:
-                $this->setFilename("info-".date('m-d-Y').".log");
-                $this->log($message, $level, $context);
-                $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
-                break;
-            case self::WARNING:
-                $this->warning($message, $context);
-                break;
-            case self::ERROR:
-                $this->error($message, $context);
-                break;
-            case self::CRITICAL:
-                $this->critical($message, $context);
-                break;
-            case self::ALERT:
-                $this->alert($message, $context);
-                break;
-            case self::EMERGENCY:
-                $this->emergency($message, $context);
-                break;
-            default:
-                $this->log($message, $level, $context);
-        }
-
-        $this->log($message, $level, $context);
-    }
-
     /**
      * Logs a DEBUG message with a specific level and additional context.
      * @throws Exception
      */
-    function debug(string $message, array $context): void
+    function debug(string $message, array $context = []): void
     {
-        $this->setFilename("info-".date('m-d-Y').".log");
-        $this->log($message, self::DEBUG, $context);
-        $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
+        $this->logForLevel($message, self::DEBUG, $context);
     }
 
     /**
@@ -122,11 +89,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception If an error occurs while logging.
      */
-    function info(string $message, array $context): void
+    function info(string $message, array $context = []): void
     {
-        $this->setFilename("info-".date('m-d-Y').".log");
-        $this->log($message, self::INFO, $context);
-        $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
+        $this->logForLevel($message, self::INFO, $context);
     }
 
     /**
@@ -137,10 +102,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception If an error occurs while logging.
      */
-    function notice(string $message, array $context): void
+    function notice(string $message, array $context = []): void
     {
-        $this->setFilename("info-".date('m-d-Y').".log");
-        $this->log($message, self::NOTICE, $context);
+        $this->logForLevel($message, self::NOTICE, $context);
     }
 
     /**
@@ -151,9 +115,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception
      */
-    function warning(string $message, array $context): void
+    function warning(string $message, array $context = []): void
     {
-        $this->log($message, self::WARNING, $context);
+        $this->logForLevel($message, self::WARNING, $context);
     }
 
     /**
@@ -164,9 +128,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception
      */
-    function error(string $message, array $context): void
+    function error(string $message, array $context = []): void
     {
-        $this->log($message, self::ERROR, $context);
+        $this->logForLevel($message, self::ERROR, $context);
     }
 
     /**
@@ -177,9 +141,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception
      */
-    function critical(string $message, array $context): void
+    function critical(string $message, array $context = []): void
     {
-        $this->log($message, self::CRITICAL, $context);
+        $this->logForLevel($message, self::CRITICAL, $context);
     }
 
     /**
@@ -190,9 +154,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception
      */
-    function alert(string $message, array $context): void
+    function alert(string $message, array $context = []): void
     {
-        $this->log($message, self::ALERT, $context);
+        $this->logForLevel($message, self::ALERT, $context);
     }
 
     /**
@@ -203,9 +167,9 @@ class DefaultLogger implements LoggerInterface
      * @return void
      * @throws Exception
      */
-    function emergency(string $message, array $context): void
+    function emergency(string $message, array $context = []): void
     {
-        $this->log($message, self::EMERGENCY, $context);
+        $this->logForLevel($message, self::EMERGENCY, $context);
     }
 
     /**
@@ -215,7 +179,12 @@ class DefaultLogger implements LoggerInterface
      */
     function getFilename(): string
     {
-        return $this->filename ?? date('m-d-Y').".log";
+        return $this->filename ?? $this->defaultLogFilename();
+    }
+
+    public function getFileHandle(): string
+    {
+        return $this->getLogPath().$this->getFilename();
     }
 
     function defaultLogFilename(): string
@@ -231,6 +200,41 @@ class DefaultLogger implements LoggerInterface
     function getLogPath(): string
     {
         return $this->path ?? __DIR__."/../../logs/";
+    }
+
+    /**
+     * Method to log a message based on the specified log level.
+     *
+     * @param string $message The message to be logged.
+     * @param int $level The log level.
+     * @param array $context The additional context for the log message.
+     * @return void
+     * @throws Exception
+     */
+    private function logForLevel(string $message, int $level, array $context): void
+    {
+        switch ($level) {
+            case self::DEBUG:
+            case self::INFO:
+            case self::NOTICE:
+                $this->setFilename("info-".date('m-d-Y').".log");
+                $this->log($message, $level, $context);
+                $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
+                break;
+            case self::WARNING:
+            case self::ERROR:
+            case self::CRITICAL:
+            case self::ALERT:
+            case self::EMERGENCY:
+                $this->setFilename("error-".date('m-d-Y').".log");
+                $this->log($message, $level, $context);
+                $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
+                break;
+            default:
+                $this->log($message, $level, $context);
+                $this->setFilename($this->defaultLogFilename()); // Revert back to the default log file
+                break;
+        }
     }
 
 }

@@ -3,7 +3,9 @@
 namespace Pagewerx\UswerxApiPhp\Client;
 
 use GuzzleHttp\Exception\GuzzleException;
-use Pagewerx\UswerxApiPhp\DraftOrder\DraftOrder;
+use Pagewerx\UswerxApiPhp\Context;
+use Pagewerx\UswerxApiPhp\Contracts\LoggerInterface;
+use Pagewerx\UswerxApiPhp\DraftOrder\draft;
 
 class Client
 {
@@ -12,25 +14,23 @@ class Client
     private bool $debug = false;
     private bool $test = false;
     private \GuzzleHttp\Client $httpClient;
-    public \src\Contracts\LoggerInterface $logger;
+    public LoggerInterface $logger;
 
 
-    public function __construct(
-        string                         $token,
-        string                         $host = 'https://uswerx.com',
-        \src\Contracts\LoggerInterface $logger = null,
-        bool                           $debug = false,
-        bool                           $test = false,
-        \GuzzleHttp\Client             $httpClient = null
-    )
+    public function __construct()
     {
-        $this->token = $token;
-        $this->host = $host;
-        $this->debug = $debug;
-        $this->test = $test;
+        $context = Context::getInstance();
+        if (!$context->initialized()) {
+            throw new \Exception('The context Singleton has not been initialized.');
+        }
+
+        $this->token = $context->getToken();
+        $this->host = $context->getHost();
+        $this->debug = $context->debugMode();
+        $this->test = $context->testMode();
         if ($this->test) {
             $this->host = 'https://example.com';
-            $this->httpClient = $httpClient;
+            $this->httpClient = $context->getClient();
         }
     }
 
@@ -51,12 +51,7 @@ class Client
         return $this->debug;
     }
 
-    public function setLogger(\src\Contracts\LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-    }
-
-    public function createDraftOrder($data = []): DraftOrder
+    public function createDraftOrder($data = []): draft
     {
         try {
             $this->debugLog('Creating Draft Order', $data);
@@ -83,7 +78,7 @@ class Client
                 'form_params' => $form_data
             ]);
             $draftObj = json_decode($response->getBody()->getContents(), false);
-            $draft = new DraftOrder($draftObj->id,$draftObj);
+            $draft = new draft($draftObj->id,$draftObj);
             return $draft;
         } catch (\Exception $e) {
             $this->debugLog('Exception: '.$e->getMessage());
@@ -94,9 +89,13 @@ class Client
         }
     }
 
+    private function getLogger(): ?LoggerInterface
+    {
+        return $this->logger;
+    }
     private function loggingEnabled(): bool
     {
-        return !empty($this->logger);
+        return !empty($this->getLogger());
     }
 
     private function debugLogEnabled(): bool
@@ -109,5 +108,22 @@ class Client
         if ($this->debugLogEnabled()) {
             $this->logger->debug($message, $context);
         }
+    }
+
+    public function getHost()
+    {
+        return $this->host;
+    }
+
+    public function getToken()
+    {
+        return $this->token;
+    }
+
+    public function post(string $endpoint, array $array)
+    {
+        $this->debugLog('Posting to '.$endpoint, $array);
+        $response = $this->httpClient->post($endpoint, $array);
+        return $response;
     }
 }
